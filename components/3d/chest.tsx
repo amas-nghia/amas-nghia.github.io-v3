@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react"
 import { useFrame } from "@react-three/fiber"
-import type { Group } from "three"
-import { useGameStore } from "@/lib/game-store"
+import { Text } from "@react-three/drei"
 import type { ChestReward } from "@/lib/game-data"
+import { useGameStore } from "@/lib/game-store"
+import type * as THREE from "three"
 
 interface ChestProps {
   position: [number, number, number]
@@ -13,80 +14,73 @@ interface ChestProps {
 }
 
 export function Chest({ position, reward, onClaim }: ChestProps) {
-  const group = useRef<Group>(null)
+  const meshRef = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
   const { claimedChests } = useGameStore()
-  const [isHovered, setIsHovered] = useState(false)
+
   const isClaimed = claimedChests.includes(reward.id)
 
   useFrame((state) => {
-    if (!group.current) return
-
-    // Floating animation
-    group.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1
-
-    // Rotation animation
-    group.current.rotation.y = state.clock.elapsedTime * 0.5
-
-    // Scale animation when hovered
-    const targetScale = isHovered ? 1.2 : 1
-    group.current.scale.lerp({ x: targetScale, y: targetScale, z: targetScale } as any, 0.1)
+    if (meshRef.current && !isClaimed) {
+      // Floating animation
+      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.2
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.5
+    }
   })
 
-  const handleClick = () => {
-    if (!isClaimed) {
-      onClaim()
-    }
-  }
+  if (isClaimed) return null
 
   return (
     <group
-      ref={group}
+      ref={meshRef}
       position={position}
-      onClick={handleClick}
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={() => setIsHovered(false)}
-      style={{ cursor: isClaimed ? "default" : "pointer" }}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      onClick={onClaim}
+      scale={hovered ? 1.2 : 1}
     >
-      {/* Chest base */}
+      {/* Chest Base */}
       <mesh castShadow>
         <boxGeometry args={[1, 0.6, 0.8]} />
-        <meshStandardMaterial color={isClaimed ? "#8B4513" : "#DAA520"} />
+        <meshStandardMaterial color="#DAA520" />
       </mesh>
 
-      {/* Chest lid */}
-      <mesh position={[0, 0.4, isClaimed ? -0.3 : 0]} rotation={[isClaimed ? -Math.PI / 3 : 0, 0, 0]} castShadow>
+      {/* Chest Lid */}
+      <mesh position={[0, 0.4, 0]} castShadow>
         <boxGeometry args={[1, 0.2, 0.8]} />
-        <meshStandardMaterial color={isClaimed ? "#654321" : "#FFD700"} />
+        <meshStandardMaterial color="#FFD700" />
       </mesh>
 
-      {/* Lock (only visible if not claimed) */}
-      {!isClaimed && (
-        <mesh position={[0, 0.2, 0.41]}>
-          <cylinderGeometry args={[0.1, 0.1, 0.3, 8]} />
-          <meshStandardMaterial color="#C0C0C0" />
+      {/* Lock */}
+      <mesh position={[0, 0.1, 0.41]} castShadow>
+        <boxGeometry args={[0.2, 0.3, 0.1]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+
+      {/* Glow effect */}
+      <pointLight color="#FFD700" intensity={0.5} distance={3} />
+
+      {/* Floating text */}
+      {hovered && (
+        <Text position={[0, 1.5, 0]} fontSize={0.3} color="#FFD700" anchorX="center" anchorY="middle">
+          {`${reward.coins} coins\n${reward.experience} XP`}
+        </Text>
+      )}
+
+      {/* Particles effect */}
+      {Array.from({ length: 8 }, (_, i) => (
+        <mesh
+          key={i}
+          position={[
+            Math.cos((i / 8) * Math.PI * 2) * 1.5,
+            Math.sin(Date.now() * 0.001 + i) * 0.5 + 1,
+            Math.sin((i / 8) * Math.PI * 2) * 1.5,
+          ]}
+        >
+          <sphereGeometry args={[0.05, 4, 4]} />
+          <meshStandardMaterial color="#FFD700" emissive="#FFD700" emissiveIntensity={0.5} />
         </mesh>
-      )}
-
-      {/* Glow effect for unclaimed chests */}
-      {!isClaimed && <pointLight position={[0, 1, 0]} color="#FFD700" intensity={0.5} distance={3} />}
-
-      {/* Reward particles */}
-      {!isClaimed && (
-        <>
-          <mesh position={[0.5, 1.5, 0]}>
-            <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#FFD700" />
-          </mesh>
-          <mesh position={[-0.3, 1.8, 0.2]}>
-            <sphereGeometry args={[0.03]} />
-            <meshBasicMaterial color="#FFD700" />
-          </mesh>
-          <mesh position={[0.2, 2, -0.3]}>
-            <sphereGeometry args={[0.04]} />
-            <meshBasicMaterial color="#FFD700" />
-          </mesh>
-        </>
-      )}
+      ))}
     </group>
   )
 }

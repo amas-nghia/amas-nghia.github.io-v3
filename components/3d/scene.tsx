@@ -13,60 +13,80 @@ import { CHEST_REWARDS } from "@/lib/game-data"
 export function Scene3D() {
   const { gamePhase, currentEnemy, enemyHealth, claimChest } = useGameStore()
 
-  // Generate trees along the path
-  const trees = Array.from({ length: 20 }, (_, i) => ({
+  // Generate palm trees along the beach
+  const trees = Array.from({ length: 30 }, (_, i) => ({
     id: i,
-    position: [(Math.random() - 0.5) * 20 + (i % 2 === 0 ? -8 : 8), 0, -i * 5 - 10] as [number, number, number],
-    scale: 0.5 + Math.random() * 0.5,
+    position: [(Math.random() - 0.5) * 30 + (i % 2 === 0 ? -12 : 12), 0, -i * 8 - 20] as [number, number, number],
+    scale: 0.8 + Math.random() * 0.4,
+    type: Math.random() > 0.5 ? "coconut" : ("palm" as "coconut" | "palm"),
   }))
 
-  // Position chests at different sections
+  // Position chests at different sections along the beach
   const chestPositions: { [key: string]: [number, number, number] } = {
-    about_chest: [3, 1, -15],
-    experience_chest: [3, 1, -30],
-    projects_chest: [3, 1, -45],
-    skills_chest: [3, 1, -60],
+    about_chest: [4, 2, -25],
+    experience_chest: [4, 2, -50],
+    projects_chest: [4, 2, -75],
+    skills_chest: [4, 2, -100],
   }
 
   return (
     <div className="fixed inset-0 -z-10">
-      <Canvas camera={{ position: [0, 5, 10], fov: 60 }} shadows>
+      <Canvas camera={{ position: [0, 8, 15], fov: 60 }} shadows gl={{ antialias: true }}>
         <Suspense fallback={null}>
           {/* Lighting */}
-          <ambientLight intensity={0.4} />
+          <ambientLight intensity={0.6} />
           <directionalLight
-            position={[10, 10, 5]}
-            intensity={1}
+            position={[20, 20, 10]}
+            intensity={1.2}
             castShadow
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
+            shadow-camera-far={100}
+            shadow-camera-left={-20}
+            shadow-camera-right={20}
+            shadow-camera-top={20}
+            shadow-camera-bottom={-20}
           />
 
-          {/* Environment */}
-          <Sky sunPosition={[100, 20, 100]} />
+          {/* Ocean Environment */}
+          <Sky sunPosition={[100, 20, 100]} inclination={0.49} azimuth={0.25} />
           <Environment preset="sunset" />
 
-          {/* Ground */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
-            <planeGeometry args={[100, 200]} />
-            <meshStandardMaterial color="#90EE90" />
+          {/* Ocean */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-15, -2, -50]} receiveShadow>
+            <planeGeometry args={[100, 300]} />
+            <meshStandardMaterial color="#006994" transparent opacity={0.8} roughness={0.1} metalness={0.1} />
           </mesh>
 
-          {/* Path */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9, -50]} receiveShadow>
-            <planeGeometry args={[4, 200]} />
+          {/* Beach Sand */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[5, -1.9, -50]} receiveShadow>
+            <planeGeometry args={[30, 300]} />
+            <meshStandardMaterial color="#F4A460" />
+          </mesh>
+
+          {/* Wooden Boardwalk Path */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.8, -50]} receiveShadow>
+            <planeGeometry args={[4, 300]} />
             <meshStandardMaterial color="#8B4513" />
           </mesh>
+
+          {/* Boardwalk planks */}
+          {Array.from({ length: 60 }, (_, i) => (
+            <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.75, -20 + i * 5]} receiveShadow>
+              <planeGeometry args={[4.2, 0.3]} />
+              <meshStandardMaterial color="#654321" />
+            </mesh>
+          ))}
 
           {/* Character */}
           <Character position={[0, 0, 0]} />
 
-          {/* Trees */}
+          {/* Palm Trees */}
           {trees.map((tree) => (
-            <Tree key={tree.id} position={tree.position} scale={tree.scale} />
+            <Tree key={tree.id} position={tree.position} scale={tree.scale} type={tree.type} />
           ))}
 
-          {/* Chests */}
+          {/* Treasure Chests */}
           {gamePhase === "journey" &&
             CHEST_REWARDS.map((reward) => (
               <Chest
@@ -79,30 +99,55 @@ export function Scene3D() {
 
           {/* Enemy in battle */}
           {gamePhase === "battle" && currentEnemy && (
-            <EnemyModel enemy={currentEnemy} position={[0, 0, -5]} health={enemyHealth} />
+            <EnemyModel enemy={currentEnemy} position={[0, 0, -8]} health={enemyHealth} />
           )}
 
-          {/* Shop building */}
+          {/* Beach Hut Shop */}
           {(gamePhase === "shop" || gamePhase === "battle" || gamePhase === "victory" || gamePhase === "defeat") && (
-            <group position={[0, 0, -80]}>
-              {/* Shop structure */}
-              <mesh position={[0, 2, 0]}>
-                <boxGeometry args={[8, 4, 6]} />
+            <group position={[0, 0, -120]}>
+              {/* Hut Base */}
+              <mesh position={[0, 1, 0]} castShadow>
+                <boxGeometry args={[10, 3, 8]} />
                 <meshStandardMaterial color="#8B4513" />
               </mesh>
-              <mesh position={[0, 5, 0]}>
-                <coneGeometry args={[5, 2, 4]} />
-                <meshStandardMaterial color="#DC143C" />
+
+              {/* Thatched Roof */}
+              <mesh position={[0, 3.5, 0]} castShadow>
+                <coneGeometry args={[7, 3, 4]} />
+                <meshStandardMaterial color="#DAA520" />
               </mesh>
-              {/* Shop sign */}
-              <mesh position={[0, 3, 3.1]}>
-                <planeGeometry args={[4, 1]} />
-                <meshStandardMaterial color="#FFD700" />
+
+              {/* Shop Sign */}
+              <mesh position={[0, 2.5, 4.1]} castShadow>
+                <planeGeometry args={[6, 1.5]} />
+                <meshStandardMaterial color="#F5DEB3" />
+              </mesh>
+
+              {/* Support Posts */}
+              <mesh position={[-4, 0, 4]} castShadow>
+                <cylinderGeometry args={[0.2, 0.2, 3]} />
+                <meshStandardMaterial color="#8B4513" />
+              </mesh>
+              <mesh position={[4, 0, 4]} castShadow>
+                <cylinderGeometry args={[0.2, 0.2, 3]} />
+                <meshStandardMaterial color="#8B4513" />
               </mesh>
             </group>
           )}
 
-          <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} target={[0, 0, 0]} />
+          {/* Ocean waves animation */}
+          {Array.from({ length: 20 }, (_, i) => (
+            <mesh
+              key={i}
+              position={[-15 + Math.random() * 10, -1.5, -30 + i * 10]}
+              rotation={[-Math.PI / 2, 0, Math.random() * Math.PI]}
+            >
+              <planeGeometry args={[2, 0.5]} />
+              <meshStandardMaterial color="#87CEEB" transparent opacity={0.6} />
+            </mesh>
+          ))}
+
+          <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} target={[0, 2, -10]} />
         </Suspense>
       </Canvas>
     </div>

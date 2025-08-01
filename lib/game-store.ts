@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import type { Equipment, Enemy, ChestReward } from "./game-data"
 
-export interface GameState {
+interface GameState {
   // Player stats
   coins: number
   experience: number
@@ -16,31 +16,28 @@ export interface GameState {
   equippedArmor: Equipment | null
   inventory: Equipment[]
 
-  // Game progress
-  currentSection: string
-  claimedChests: string[]
-  isInBattle: boolean
-  currentEnemy: Enemy | null
-  enemyHealth: number
-
   // Game state
   gamePhase: "journey" | "shop" | "battle" | "victory" | "defeat"
+  currentEnemy: Enemy | null
+  enemyHealth: number
+  claimedChests: string[]
   isMoving: boolean
+  scrollProgress: number
 
   // Actions
   addCoins: (amount: number) => void
   spendCoins: (amount: number) => boolean
   addExperience: (amount: number) => void
   equipItem: (item: Equipment) => void
-  addToInventory: (item: Equipment) => void
+  buyItem: (item: Equipment) => boolean
   claimChest: (chestId: string, reward: ChestReward) => void
-  setCurrentSection: (section: string) => void
+  setGamePhase: (phase: GameState["gamePhase"]) => void
   startBattle: (enemy: Enemy) => void
   takeDamage: (damage: number) => void
   dealDamage: (damage: number) => void
-  setGamePhase: (phase: GameState["gamePhase"]) => void
-  setIsMoving: (moving: boolean) => void
   resetGame: () => void
+  setIsMoving: (moving: boolean) => void
+  setScrollProgress: (progress: number) => void
 }
 
 const initialState = {
@@ -54,13 +51,12 @@ const initialState = {
   equippedWeapon: null,
   equippedArmor: null,
   inventory: [],
-  currentSection: "hero",
-  claimedChests: [],
-  isInBattle: false,
+  gamePhase: "journey" as const,
   currentEnemy: null,
   enemyHealth: 0,
-  gamePhase: "journey" as const,
+  claimedChests: [],
   isMoving: false,
+  scrollProgress: 0,
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -81,11 +77,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     set((state) => {
       const newExp = state.experience + amount
       const newLevel = Math.floor(newExp / 100) + 1
+      const healthIncrease = newLevel > state.level ? 20 : 0
+      const manaIncrease = newLevel > state.level ? 10 : 0
+
       return {
         experience: newExp,
         level: newLevel,
-        maxHealth: 100 + (newLevel - 1) * 20,
-        maxMana: 50 + (newLevel - 1) * 10,
+        maxHealth: state.maxHealth + healthIncrease,
+        maxMana: state.maxMana + manaIncrease,
+        health: Math.min(state.health + healthIncrease, state.maxHealth + healthIncrease),
+        mana: Math.min(state.mana + manaIncrease, state.maxMana + manaIncrease),
       }
     }),
 
@@ -99,26 +100,36 @@ export const useGameStore = create<GameState>((set, get) => ({
       return state
     }),
 
-  addToInventory: (item) =>
-    set((state) => ({
-      inventory: [...state.inventory, item],
-    })),
+  buyItem: (item) => {
+    const state = get()
+    if (state.coins >= item.price) {
+      set({
+        coins: state.coins - item.price,
+        inventory: [...state.inventory, item],
+      })
+      return true
+    }
+    return false
+  },
 
   claimChest: (chestId, reward) =>
-    set((state) => ({
-      claimedChests: [...state.claimedChests, chestId],
-      coins: state.coins + reward.coins,
-      experience: state.experience + reward.experience,
-    })),
+    set((state) => {
+      if (state.claimedChests.includes(chestId)) return state
 
-  setCurrentSection: (section) => set({ currentSection: section }),
+      return {
+        claimedChests: [...state.claimedChests, chestId],
+        coins: state.coins + reward.coins,
+        experience: state.experience + reward.experience,
+      }
+    }),
+
+  setGamePhase: (phase) => set({ gamePhase: phase }),
 
   startBattle: (enemy) =>
     set({
-      isInBattle: true,
+      gamePhase: "battle",
       currentEnemy: enemy,
       enemyHealth: enemy.stats.health,
-      gamePhase: "battle",
     }),
 
   takeDamage: (damage) =>
@@ -132,6 +143,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dealDamage: (damage) =>
     set((state) => {
+      if (!state.currentEnemy) return state
+
       const newEnemyHealth = Math.max(0, state.enemyHealth - damage)
       return {
         enemyHealth: newEnemyHealth,
@@ -139,9 +152,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }),
 
-  setGamePhase: (phase) => set({ gamePhase: phase }),
+  resetGame: () => set(initialState),
 
   setIsMoving: (moving) => set({ isMoving: moving }),
 
-  resetGame: () => set(initialState),
+  setScrollProgress: (progress) => set({ scrollProgress: progress }),
 }))

@@ -1,46 +1,18 @@
 "use client"
 
-import type React from "react"
-
-import { useEffect } from "react"
-import { useGameStore } from "@/lib/game-store"
+import type { ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 interface PortfolioSectionProps {
   id: string
   title: string
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }
 
-export function PortfolioSection({ id, title, children, className = "" }: PortfolioSectionProps) {
-  const { setCurrentSection } = useGameStore()
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setCurrentSection(id)
-          }
-        })
-      },
-      { threshold: 0.5 },
-    )
-
-    const element = document.getElementById(id)
-    if (element) {
-      observer.observe(element)
-    }
-
-    return () => {
-      if (element) {
-        observer.unobserve(element)
-      }
-    }
-  }, [id, setCurrentSection])
-
+export function PortfolioSection({ id, title, children, className }: PortfolioSectionProps) {
   return (
-    <section id={id} className={`py-20 px-6 relative z-10 ${className}`}>
+    <section id={id} className={cn("py-20 px-6 relative", className)}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-light mb-4 text-white drop-shadow-lg">{title}</h2>
@@ -54,7 +26,7 @@ export function PortfolioSection({ id, title, children, className = "" }: Portfo
 
 export function HeroSection() {
   return (
-    <section className="pt-32 pb-20 px-6 relative z-10">
+    <section className="pt-32 pb-20 px-6 relative">
       <div className="max-w-6xl mx-auto">
         <div className="text-center space-y-8">
           <div className="space-y-4">
@@ -66,7 +38,28 @@ export function HeroSection() {
             </p>
           </div>
 
-          <div className="text-white/80 text-sm">🎮 Scroll down to begin your adventure and collect rewards!</div>
+          {/* Contact Info */}
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-white/90 drop-shadow">
+            <div className="flex items-center gap-2">
+              <span>📍</span>
+              <span>Hà Nội, Vietnam</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>📞</span>
+              <span>0352614770</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>✉️</span>
+              <span>thanhnghia98@gmail.com</span>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-white/80 drop-shadow text-lg">🏖️ Welcome to my coastal portfolio adventure! 🏖️</p>
+            <p className="text-white/70 drop-shadow">
+              Scroll down to explore my journey and collect treasures along the way!
+            </p>
+          </div>
         </div>
       </div>
     </section>

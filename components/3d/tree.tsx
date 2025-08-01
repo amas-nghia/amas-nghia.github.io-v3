@@ -2,54 +2,62 @@
 
 import { useRef } from "react"
 import { useFrame } from "@react-three/fiber"
-import type { Group } from "three"
-import { useGameStore } from "@/lib/game-store"
+import * as THREE from "three"
 
 interface TreeProps {
   position: [number, number, number]
   scale?: number
+  type?: "palm" | "coconut"
 }
 
-export function Tree({ position, scale = 1 }: TreeProps) {
-  const group = useRef<Group>(null)
-  const { isMoving } = useGameStore()
+export function Tree({ position, scale = 1, type = "palm" }: TreeProps) {
+  const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
-    if (!group.current || !isMoving) return
+    if (groupRef.current) {
+      // Gentle swaying motion
+      groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime + position[0]) * 0.1
 
-    // Move trees backward to simulate forward movement
-    group.current.position.z += 0.05
-
-    // Reset position when tree goes too far
-    if (group.current.position.z > 20) {
-      group.current.position.z = -100
+      // Palm fronds swaying
+      const fronds = groupRef.current.children.slice(1)
+      fronds.forEach((frond, index) => {
+        if (frond instanceof THREE.Group) {
+          frond.rotation.y = Math.sin(state.clock.elapsedTime * 2 + index) * 0.2
+        }
+      })
     }
-
-    // Slight swaying animation
-    group.current.rotation.z = Math.sin(state.clock.elapsedTime + position[0]) * 0.1
   })
 
   return (
-    <group ref={group} position={position} scale={scale}>
-      {/* Tree trunk */}
-      <mesh position={[0, 1, 0]} castShadow>
-        <cylinderGeometry args={[0.3, 0.4, 2, 8]} />
+    <group ref={groupRef} position={position} scale={scale}>
+      {/* Palm Tree Trunk */}
+      <mesh position={[0, 2, 0]} castShadow>
+        <cylinderGeometry args={[0.3, 0.4, 4, 8]} />
         <meshStandardMaterial color="#8B4513" />
       </mesh>
 
-      {/* Tree leaves - multiple layers for fuller look */}
-      <mesh position={[0, 3, 0]} castShadow>
-        <coneGeometry args={[1.5, 2, 8]} />
-        <meshStandardMaterial color="#228B22" />
-      </mesh>
-      <mesh position={[0, 4, 0]} castShadow>
-        <coneGeometry args={[1.2, 1.5, 8]} />
-        <meshStandardMaterial color="#32CD32" />
-      </mesh>
-      <mesh position={[0, 4.8, 0]} castShadow>
-        <coneGeometry args={[0.8, 1, 8]} />
-        <meshStandardMaterial color="#90EE90" />
-      </mesh>
+      {/* Palm Fronds */}
+      {Array.from({ length: 6 }, (_, i) => (
+        <group key={i} rotation={[0, (i * Math.PI) / 3, 0]}>
+          <mesh position={[0, 4.5, 1.5]} rotation={[0.3, 0, 0]} castShadow>
+            <boxGeometry args={[0.2, 0.1, 3]} />
+            <meshStandardMaterial color="#228B22" />
+          </mesh>
+          <mesh position={[0, 4.3, 2.8]} rotation={[0.1, 0, 0]} castShadow>
+            <boxGeometry args={[0.15, 0.1, 1.5]} />
+            <meshStandardMaterial color="#32CD32" />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Coconuts */}
+      {type === "coconut" &&
+        Array.from({ length: 3 }, (_, i) => (
+          <mesh key={i} position={[Math.cos(i) * 0.5, 3.8, Math.sin(i) * 0.5]} castShadow>
+            <sphereGeometry args={[0.2, 8, 8]} />
+            <meshStandardMaterial color="#8B4513" />
+          </mesh>
+        ))}
     </group>
   )
 }
