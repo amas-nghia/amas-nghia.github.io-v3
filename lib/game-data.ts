@@ -1,142 +1,86 @@
-export interface Character {
-  id: string
-  name: string
-  model: string
-  animations: {
-    idle: string
-    walk: string
-    run: string
-    attack: string
-    death: string
-  }
-  stats: {
-    health: number
-    mana: number
-    attack: number
-    defense: number
-    speed: number
-  }
-}
-
 export interface Equipment {
   id: string
   name: string
-  type: "weapon" | "armor" | "accessory"
-  model: string
-  price: number
+  type: "weapon" | "armor"
   stats: {
     attack?: number
     defense?: number
     health?: number
-    mana?: number
   }
+  price: number
   description: string
 }
 
 export interface Enemy {
   id: string
   name: string
-  model: string
-  animations: {
-    idle: string
-    walk: string
-    attack: string
-    death: string
-  }
+  type: "zombie" | "skeleton" | "creeper"
   stats: {
     health: number
     attack: number
     defense: number
-    speed: number
   }
-  reward: number
+  rewards: {
+    coins: number
+    experience: number
+  }
 }
 
 export interface ChestReward {
   id: string
-  sectionId: string
   coins: number
-  items?: Equipment[]
   experience: number
+  description: string
 }
-
-// Game Data
-export const CHARACTERS: Character[] = [
-  {
-    id: "steve",
-    name: "Steve",
-    model: "/models/steve.glb",
-    animations: {
-      idle: "idle",
-      walk: "walk",
-      run: "run",
-      attack: "attack",
-      death: "death",
-    },
-    stats: {
-      health: 100,
-      mana: 50,
-      attack: 20,
-      defense: 10,
-      speed: 5,
-    },
-  },
-]
 
 export const EQUIPMENT: Equipment[] = [
   {
     id: "wooden_sword",
     name: "Wooden Sword",
     type: "weapon",
-    model: "/models/wooden_sword.glb",
-    price: 50,
     stats: { attack: 10 },
+    price: 50,
     description: "A basic wooden sword for beginners",
   },
   {
     id: "iron_sword",
     name: "Iron Sword",
     type: "weapon",
-    model: "/models/iron_sword.glb",
-    price: 150,
     stats: { attack: 25 },
+    price: 150,
     description: "A sturdy iron sword with good damage",
   },
   {
     id: "diamond_sword",
     name: "Diamond Sword",
     type: "weapon",
-    model: "/models/diamond_sword.glb",
-    price: 500,
-    stats: { attack: 50 },
-    description: "The ultimate weapon for true warriors",
+    stats: { attack: 40 },
+    price: 300,
+    description: "The ultimate weapon for serious battles",
   },
   {
     id: "leather_armor",
     name: "Leather Armor",
     type: "armor",
-    model: "/models/leather_armor.glb",
-    price: 100,
-    stats: { defense: 15, health: 20 },
+    stats: { defense: 5, health: 20 },
+    price: 75,
     description: "Basic protection from leather",
   },
   {
     id: "iron_armor",
     name: "Iron Armor",
     type: "armor",
-    model: "/models/iron_armor.glb",
-    price: 300,
-    stats: { defense: 35, health: 50 },
+    stats: { defense: 15, health: 50 },
+    price: 200,
     description: "Strong iron protection",
   },
   {
     id: "diamond_armor",
     name: "Diamond Armor",
     type: "armor",
-    model: "/models/diamond_armor.glb",
-    price: 800,
-    stats: { defense: 70, health: 100 },
-    description: "Ultimate protection for heroes",
+    stats: { defense: 25, health: 100 },
+    price: 400,
+    description: "Ultimate protection for warriors",
   },
 ]
 
@@ -144,96 +88,54 @@ export const ENEMIES: Enemy[] = [
   {
     id: "zombie",
     name: "Zombie",
-    model: "/models/zombie.glb",
-    animations: {
-      idle: "idle",
-      walk: "walk",
-      attack: "attack",
-      death: "death",
-    },
-    stats: {
-      health: 80,
-      attack: 15,
-      defense: 5,
-      speed: 2,
-    },
-    reward: 25,
+    type: "zombie",
+    stats: { health: 80, attack: 15, defense: 5 },
+    rewards: { coins: 30, experience: 25 },
   },
   {
     id: "skeleton",
     name: "Skeleton",
-    model: "/models/skeleton.glb",
-    animations: {
-      idle: "idle",
-      walk: "walk",
-      attack: "attack",
-      death: "death",
-    },
-    stats: {
-      health: 60,
-      attack: 20,
-      defense: 3,
-      speed: 4,
-    },
-    reward: 30,
+    type: "skeleton",
+    stats: { health: 60, attack: 20, defense: 3 },
+    rewards: { coins: 40, experience: 30 },
   },
   {
     id: "creeper",
     name: "Creeper",
-    model: "/models/creeper.glb",
-    animations: {
-      idle: "idle",
-      walk: "walk",
-      attack: "explode",
-      death: "death",
-    },
-    stats: {
-      health: 100,
-      attack: 40,
-      defense: 8,
-      speed: 3,
-    },
-    reward: 50,
+    type: "creeper",
+    stats: { health: 100, attack: 30, defense: 2 },
+    rewards: { coins: 60, experience: 50 },
   },
 ]
 
 export const CHEST_REWARDS: ChestReward[] = [
   {
     id: "about_chest",
-    sectionId: "about",
-    coins: 100,
-    experience: 50,
+    coins: 50,
+    experience: 25,
+    description: "Reward for learning about the developer",
   },
   {
     id: "experience_chest",
-    sectionId: "experience",
-    coins: 150,
-    experience: 75,
+    coins: 75,
+    experience: 40,
+    description: "Reward for exploring work experience",
   },
   {
     id: "projects_chest",
-    sectionId: "projects",
-    coins: 200,
-    experience: 100,
+    coins: 100,
+    experience: 60,
+    description: "Reward for checking out projects",
   },
   {
     id: "skills_chest",
-    sectionId: "skills",
-    coins: 250,
-    experience: 125,
+    coins: 75,
+    experience: 35,
+    description: "Reward for reviewing skills",
   },
 ]
 
-// Portfolio Data
 export const PORTFOLIO_DATA = {
-  personal: {
-    name: "Nguyễn Thành Nghĩa",
-    title: "Game Developer",
-    location: "Hà Nội, Vietnam",
-    phone: "0352614770",
-    email: "thanhnghia98@gmail.com",
-    linkedin: "https://www.linkedin.com/in/nghia-nguyen-thanh-4b61a613a",
-  },
   experiences: [
     {
       company: "Capy Labs",
@@ -300,6 +202,7 @@ export const PORTFOLIO_DATA = {
       period: "2024",
       description: "Android mobile game with optimized performance and integrated advertising systems.",
       technologies: ["Unity", "Android", "AdMob", "Firebase"],
+      link: "#",
       status: "Released",
     },
     {
@@ -307,6 +210,7 @@ export const PORTFOLIO_DATA = {
       period: "2024",
       description: "3D puzzle game featuring rope physics and optimized mobile performance.",
       technologies: ["Unity", "Obi-rope", "AdMob", "Firebase"],
+      link: "#",
       status: "Released",
     },
     {
@@ -314,6 +218,7 @@ export const PORTFOLIO_DATA = {
       period: "Jul 2022 - Jul 2023",
       description: "WebGL NFT game developed for funding and full product deployment.",
       technologies: ["Unity", "WebGL", "Nakama", "Spine"],
+      link: "#",
       status: "Released",
     },
     {
@@ -321,6 +226,7 @@ export const PORTFOLIO_DATA = {
       period: "2022",
       description: "Multiplayer sandbox game with multilingual support and collaborative UI development.",
       technologies: ["Unity", "Photon Fusion", "Multiplayer"],
+      link: "#",
       status: "Released",
     },
   ],

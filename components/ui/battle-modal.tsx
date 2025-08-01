@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useGameStore } from "@/lib/game-store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Sword, Shield, Heart, Zap } from "lucide-react"
+import { useGameStore } from "@/lib/game-store"
+import { Sword, Shield, Heart, Skull } from "lucide-react"
 
 interface BattleModalProps {
   isOpen: boolean
@@ -21,196 +21,183 @@ export function BattleModal({ isOpen, onClose }: BattleModalProps) {
     maxHealth,
     equippedWeapon,
     equippedArmor,
-    takeDamage,
     dealDamage,
+    takeDamage,
     addCoins,
-    gamePhase,
+    addExperience,
     setGamePhase,
     resetGame,
+    gamePhase,
   } = useGameStore()
 
   const [battleLog, setBattleLog] = useState<string[]>([])
   const [isPlayerTurn, setIsPlayerTurn] = useState(true)
 
   useEffect(() => {
-    if (gamePhase === "victory") {
-      setBattleLog((prev) => [...prev, `🎉 Victory! You defeated the ${currentEnemy?.name}!`])
-      if (currentEnemy) {
-        addCoins(currentEnemy.reward)
-        setBattleLog((prev) => [...prev, `💰 Earned ${currentEnemy.reward} coins!`])
-      }
-    } else if (gamePhase === "defeat") {
-      setBattleLog((prev) => [...prev, `💀 Defeat! The ${currentEnemy?.name} has bested you...`])
+    if (gamePhase === "battle" && currentEnemy) {
+      setBattleLog([`A wild ${currentEnemy.name} appears!`])
+      setIsPlayerTurn(true)
     }
-  }, [gamePhase, currentEnemy, addCoins])
+  }, [gamePhase, currentEnemy])
+
+  useEffect(() => {
+    if (gamePhase === "victory" && currentEnemy) {
+      setBattleLog((prev) => [...prev, `Victory! You defeated the ${currentEnemy.name}!`])
+      addCoins(currentEnemy.rewards.coins)
+      addExperience(currentEnemy.rewards.experience)
+
+      setTimeout(() => {
+        setBattleLog((prev) => [
+          ...prev,
+          `You earned ${currentEnemy.rewards.coins} coins and ${currentEnemy.rewards.experience} experience!`,
+        ])
+      }, 1000)
+    }
+  }, [gamePhase, currentEnemy, addCoins, addExperience])
+
+  useEffect(() => {
+    if (gamePhase === "defeat") {
+      setBattleLog((prev) => [...prev, "You have been defeated...", "The journey begins anew..."])
+    }
+  }, [gamePhase])
 
   const handleAttack = () => {
     if (!currentEnemy || !isPlayerTurn) return
 
     const weaponDamage = equippedWeapon?.stats.attack || 10
-    const totalDamage = weaponDamage + Math.floor(Math.random() * 10)
+    const damage = Math.floor(weaponDamage + Math.random() * 10)
 
-    dealDamage(totalDamage)
-    setBattleLog((prev) => [...prev, `⚔️ You attack for ${totalDamage} damage!`])
+    dealDamage(damage)
+    setBattleLog((prev) => [...prev, `You attack for ${damage} damage!`])
+
+    if (enemyHealth - damage <= 0) {
+      setGamePhase("victory")
+      return
+    }
 
     setIsPlayerTurn(false)
 
-    // Enemy turn after delay
+    // Enemy turn
     setTimeout(() => {
-      if (enemyHealth - totalDamage > 0) {
-        const enemyDamage = Math.max(1, currentEnemy.stats.attack - (equippedArmor?.stats.defense || 0))
-        takeDamage(enemyDamage)
-        setBattleLog((prev) => [...prev, `🧟 ${currentEnemy.name} attacks for ${enemyDamage} damage!`])
+      const enemyDamage = Math.floor(currentEnemy.stats.attack + Math.random() * 5)
+      const armorDefense = equippedArmor?.stats.defense || 0
+      const finalDamage = Math.max(1, enemyDamage - armorDefense)
+
+      takeDamage(finalDamage)
+      setBattleLog((prev) => [...prev, `${currentEnemy.name} attacks for ${finalDamage} damage!`])
+
+      if (health - finalDamage <= 0) {
+        setGamePhase("defeat")
+      } else {
+        setIsPlayerTurn(true)
       }
-      setIsPlayerTurn(true)
     }, 1500)
   }
 
-  const handleDefend = () => {
-    if (!isPlayerTurn) return
-
-    setBattleLog((prev) => [...prev, `🛡️ You defend and recover some health!`])
-    // Heal a small amount
-    const healAmount = Math.floor(maxHealth * 0.1)
-    // Note: You'd need to add a heal function to the store
-
-    setIsPlayerTurn(false)
-
-    setTimeout(() => {
-      if (currentEnemy && enemyHealth > 0) {
-        const enemyDamage = Math.max(1, Math.floor(currentEnemy.stats.attack * 0.5))
-        takeDamage(enemyDamage)
-        setBattleLog((prev) => [...prev, `🧟 ${currentEnemy.name} attacks for ${enemyDamage} damage!`])
-      }
-      setIsPlayerTurn(true)
-    }, 1500)
+  const handleRestart = () => {
+    resetGame()
+    onClose()
+    window.scrollTo(0, 0)
   }
 
   const handleContinue = () => {
-    if (gamePhase === "victory") {
-      setGamePhase("journey")
-      onClose()
-    } else if (gamePhase === "defeat") {
-      resetGame()
-      onClose()
-    }
+    setGamePhase("journey")
+    onClose()
   }
 
   if (!currentEnemy) return null
 
-  const playerHealthPercentage = (health / maxHealth) * 100
-  const enemyHealthPercentage = (enemyHealth / currentEnemy.stats.health) * 100
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl minecraft-ui bg-black/95 text-white border-4 border-red-600">
+    <Dialog open={isOpen} onOpenChange={() => {}}>
+      <DialogContent className="max-w-2xl bg-gradient-to-b from-red-900 to-black text-white">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-center text-red-400">⚔️ Battle Arena</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center text-red-400">⚔️ Battle Arena</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Player Stats */}
-          <Card className="bg-blue-900/50 border-blue-600">
+        <div className="space-y-4">
+          {/* Enemy Status */}
+          <Card className="bg-red-800/50 border-red-600">
             <CardContent className="p-4">
-              <h3 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">
-                <Sword className="w-5 h-5" />
-                You
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <Progress value={playerHealthPercentage} className="flex-1" />
-                  <span className="text-sm">
-                    {health}/{maxHealth}
-                  </span>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-red-300">{currentEnemy.name}</h3>
+                <div className="flex items-center gap-2 text-red-300">
+                  <Skull className="w-4 h-4" />
+                  <span>{currentEnemy.stats.attack} ATK</span>
                 </div>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span>Weapon:</span>
-                    <span className="text-orange-400">{equippedWeapon?.name || "Fists"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Armor:</span>
-                    <span className="text-blue-400">{equippedArmor?.name || "None"}</span>
-                  </div>
-                </div>
+              </div>
+              <Progress value={(enemyHealth / currentEnemy.stats.health) * 100} className="h-3" />
+              <div className="text-sm text-red-300 mt-1">
+                {enemyHealth}/{currentEnemy.stats.health} HP
               </div>
             </CardContent>
           </Card>
 
-          {/* Enemy Stats */}
-          <Card className="bg-red-900/50 border-red-600">
+          {/* Player Status */}
+          <Card className="bg-blue-800/50 border-blue-600">
             <CardContent className="p-4">
-              <h3 className="text-lg font-bold text-red-400 mb-3 flex items-center gap-2">
-                <Zap className="w-5 h-5" />
-                {currentEnemy.name}
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <Progress value={enemyHealthPercentage} className="flex-1" />
-                  <span className="text-sm">
-                    {enemyHealth}/{currentEnemy.stats.health}
-                  </span>
-                </div>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span>Attack:</span>
-                    <span className="text-red-400">{currentEnemy.stats.attack}</span>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-blue-300">You</h3>
+                <div className="flex items-center gap-4 text-blue-300">
+                  <div className="flex items-center gap-1">
+                    <Sword className="w-4 h-4" />
+                    <span>{equippedWeapon?.stats.attack || 10}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Defense:</span>
-                    <span className="text-gray-400">{currentEnemy.stats.defense}</span>
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-4 h-4" />
+                    <span>{equippedArmor?.stats.defense || 0}</span>
                   </div>
                 </div>
               </div>
+              <Progress value={(health / maxHealth) * 100} className="h-3" />
+              <div className="text-sm text-blue-300 mt-1">
+                {health}/{maxHealth} HP
+              </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Battle Log */}
-        <Card className="bg-gray-900/50 border-gray-600">
-          <CardContent className="p-4">
-            <h3 className="text-lg font-bold mb-3">Battle Log</h3>
-            <div className="h-32 overflow-y-auto space-y-1 text-sm font-mono">
-              {battleLog.map((log, index) => (
-                <div key={index} className="text-gray-300">
-                  {log}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Battle Log */}
+          <Card className="bg-gray-800/50 border-gray-600">
+            <CardContent className="p-4">
+              <div className="h-32 overflow-y-auto space-y-1">
+                {battleLog.map((log, index) => (
+                  <div key={index} className="text-sm text-gray-300">
+                    {log}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Battle Actions */}
-        <div className="flex gap-4 justify-center">
-          {gamePhase === "battle" && (
-            <>
-              <Button onClick={handleAttack} disabled={!isPlayerTurn} className="bg-red-600 hover:bg-red-700 px-6 py-3">
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-4">
+            {gamePhase === "battle" && (
+              <Button
+                onClick={handleAttack}
+                disabled={!isPlayerTurn}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2"
+              >
                 <Sword className="w-4 h-4 mr-2" />
                 Attack
               </Button>
-              <Button
-                onClick={handleDefend}
-                disabled={!isPlayerTurn}
-                className="bg-blue-600 hover:bg-blue-700 px-6 py-3"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Defend
-              </Button>
-            </>
-          )}
+            )}
 
-          {(gamePhase === "victory" || gamePhase === "defeat") && (
-            <Button
-              onClick={handleContinue}
-              className={`px-8 py-3 text-lg ${
-                gamePhase === "victory" ? "bg-green-600 hover:bg-green-700" : "bg-gray-600 hover:bg-gray-700"
-              }`}
-            >
-              {gamePhase === "victory" ? "🎉 Continue Journey" : "💀 Start Over"}
-            </Button>
-          )}
+            {gamePhase === "victory" && (
+              <Button
+                onClick={handleContinue}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Continue Journey
+              </Button>
+            )}
+
+            {gamePhase === "defeat" && (
+              <Button onClick={handleRestart} className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-2">
+                <Skull className="w-4 h-4 mr-2" />
+                Start Over
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
